@@ -3,13 +3,14 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
 const makefileJavaString = `
 build:
-	javac *.java -d ./bin
+	javac src/*.java -d ./bin
 
 run: build
 	java -cp ./bin $(program)	
@@ -33,37 +34,79 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		path, err := os.Getwd()
 		if err != nil {
-			panic(err)
+			cmd.PrintErr(err)
 		}
 
-		template := args[0]
-		createMakefile(path, template)
+		templates := args
+		addFlag, _ := cmd.Flags().GetBool("add")
+		fmt.Println(addFlag)
+
+		if addFlag {
+			err = appendToMakefile(path, templates)
+		} else {
+			err = createMakefile(path, templates)
+		}
+		if err != nil {
+			cmd.PrintErr(err)
+		}
+
 	},
 }
 
-func createMakefile(path string, template string) {
-	file, err := os.Create(path + "\\Makefile")
+func appendToMakefile(path string, templates []string) error {
+	file, err := os.OpenFile(path+"\\Makefile", os.O_APPEND, 0644)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
+	finalStr := ""
+	for _, v := range templates {
+		str, err := getTemplateStringByName(v)
+		if err != nil {
+			return err
+		}
+		finalStr += "\n" + strings.TrimPrefix(str, "\n")
+	}
+
+	file.WriteString(finalStr)
+	file.Close()
+	return nil
+}
+
+func createMakefile(path string, templates []string) error {
+	file, err := os.Create(path + "\\Makefile")
+	if err != nil {
+		return err
+	}
+
+	finalStr := ""
+	for _, v := range templates {
+		str, err := getTemplateStringByName(v)
+		if err != nil {
+			return err
+		}
+		finalStr += strings.TrimPrefix(str, "\n") + "\n"
+	}
+
+	file.WriteString(finalStr)
+	file.Close()
+	return nil
+}
+
+func getTemplateStringByName(name string) (string, error) {
 	var str string
-	switch template {
+	switch name {
 	case "go":
 		str = makefileGoString
 	case "java":
 		str = makefileJavaString
 	default:
-		panic(fmt.Errorf("there is no such makefile template: %s", template))
-
+		return str, fmt.Errorf("there is no such makefile template: %s", name)
 	}
-
-	file.WriteString(str)
-	file.Close()
+	return str, nil
 }
 
 func init() {
@@ -77,5 +120,5 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// makefileCmd.Flags().StringToStringVar("toggle", "t", false, "Help message for toggle")
+	makefileCmd.Flags().BoolP("add", "a", false, "append to existed file or not")
 }
