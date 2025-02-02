@@ -1,3 +1,4 @@
+
 build:
 	@go build -o ./bin/app.exe main.go
 
@@ -9,4 +10,3 @@ build:
 
 run: build
 	java -cp ./bin $(program)	
-

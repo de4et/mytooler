@@ -57,6 +57,11 @@ to quickly create a Cobra application.`,
 }
 
 func appendToMakefile(path string, templates []string) error {
+	fullStr, err := os.ReadFile(path + "\\Makefile")
+	if err != nil {
+		return err
+	}
+
 	file, err := os.OpenFile(path+"\\Makefile", os.O_APPEND, 0644)
 	if err != nil {
 		return err
@@ -68,6 +73,11 @@ func appendToMakefile(path string, templates []string) error {
 		if err != nil {
 			return err
 		}
+
+		if strings.Contains(string(fullStr), str) {
+			continue
+		}
+
 		finalStr += "\n" + strings.TrimPrefix(str, "\n")
 	}
 
