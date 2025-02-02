@@ -42,7 +42,6 @@ to quickly create a Cobra application.`,
 
 		templates := args
 		addFlag, _ := cmd.Flags().GetBool("add")
-		fmt.Println(addFlag)
 
 		if addFlag {
 			err = appendToMakefile(path, templates)
@@ -68,6 +67,9 @@ func appendToMakefile(path string, templates []string) error {
 	}
 
 	finalStr := ""
+	if !strings.HasSuffix(string(fullStr), "\n") {
+		finalStr = "\n"
+	}
 	for _, v := range templates {
 		str, err := getTemplateStringByName(v)
 		if err != nil {
@@ -78,7 +80,7 @@ func appendToMakefile(path string, templates []string) error {
 			continue
 		}
 
-		finalStr += "\n" + strings.TrimPrefix(str, "\n")
+		finalStr += "\n# " + v + " " + strings.Repeat("-", 20) + "\n" + strings.TrimPrefix(str, "\n")
 	}
 
 	file.WriteString(finalStr)
