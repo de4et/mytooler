@@ -8,22 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const makefileJavaString = `
-build:
-	javac src/*.java -d ./bin
-
-run: build
-	java -cp ./bin $(program)	
-`
-
-const makefileGoString = `
-build:
-	@go build -o ./bin/app.exe main.go
-
-run: build
-	@./bin/app.exe
-`
-
 // makefileCmd represents the makefile command
 var makefileCmd = &cobra.Command{
 	Use:   "makefile",
@@ -109,16 +93,29 @@ func createMakefile(path string, templates []string) error {
 }
 
 func getTemplateStringByName(name string) (string, error) {
-	var str string
-	switch name {
-	case "go":
-		str = makefileGoString
-	case "java":
-		str = makefileJavaString
-	default:
-		return str, fmt.Errorf("there is no such makefile template: %s", name)
+	entries, err := os.ReadDir("./templates")
+	if err != nil {
+		return "", err
 	}
-	return str, nil
+
+	for _, e := range entries {
+		filename := e.Name()
+		if filename != (name + ".mtemp") {
+			continue
+		}
+
+		return readFile("./templates/" + filename)
+	}
+
+	return "", fmt.Errorf("there is no such makefile template: %s", name)
+}
+
+func readFile(path string) (string, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
 
 func init() {
